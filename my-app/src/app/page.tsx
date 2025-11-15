@@ -66,11 +66,18 @@ export default function Home() {
       <Button size="sm" type="submit" disabled={loading} variant="outline" className="mt-2">
           <ArrowRight /> {loading ? 'Generating...' : 'Generate Roadmap'}
       </Button>
-      <Link href={'/roadmap'}>
-      <Button>
-        Roadmaps
-      </Button>
-      </Link>
+      <div className="flex gap-2 mt-4">
+        <Link href={'/roadmap'}>
+          <Button>
+            Roadmaps
+          </Button>
+        </Link>
+        <Link href={'/knowledge-graph'}>
+          <Button variant="secondary">
+            🧠 Knowledge Graph
+          </Button>
+        </Link>
+      </div>
       </form>
     </div>
   );
