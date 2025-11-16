@@ -3,12 +3,11 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle, XCircle, Compass, Flag, Anchor, Sparkles, Map } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Trophy } from "lucide-react";
 
 import { type Question } from "@/lib/data";
 
@@ -113,10 +112,11 @@ export default function QuizPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6">
-            <p>Loading quiz...</p>
+      <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md border-2 border-cyan-200">
+          <CardContent className="pt-6 text-center">
+            <Compass className="w-12 h-12 text-cyan-600 mx-auto mb-3 animate-spin" />
+            <p className="text-gray-700">Preparing island challenge...</p>
           </CardContent>
         </Card>
       </div>
@@ -125,15 +125,21 @@ export default function QuizPage() {
 
   if (error || !quizData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md border-2 border-red-200">
           <CardHeader>
-            <CardTitle>Quiz Not Found</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-red-600">
+              <Flag className="w-5 h-5" />
+              Challenge Not Found
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="mb-4">{error || 'The quiz for this topic is not available.'}</p>
+            <p className="mb-4 text-gray-700">{error || 'The island challenge is not available.'}</p>
             <Link href="/roadmap">
-              <Button>Back to Study</Button>
+              <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700">
+                <Map className="w-4 h-4 mr-2" />
+                Return to Expeditions
+              </Button>
             </Link>
           </CardContent>
         </Card>
@@ -167,79 +173,108 @@ export default function QuizPage() {
   };
 
   const getButtonClass = (index: number): string => {
-    if (selectedAnswer === null) return "hover:bg-gray-100";
-    if (index === questions[currentQuestion].correct) return "bg-green-100 border-green-500";
-    if (selectedAnswer === index) return "bg-red-100 border-red-500";
-    return "opacity-50";
+    if (selectedAnswer === null) return "hover:bg-cyan-50 hover:border-cyan-300 border-2";
+    if (index === questions[currentQuestion].correct) return "bg-gradient-to-r from-green-100 to-emerald-100 border-2 border-green-500";
+    if (selectedAnswer === index) return "bg-gradient-to-r from-red-100 to-rose-100 border-2 border-red-500";
+    return "opacity-50 border-2";
   };
 
+  const isPerfectScore = score === questions.length;
+
   if (isComplete) {
-    // Show unlock modal if new unlock
     return (
       <>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-          <Card className="w-full max-w-md">
+        <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4 relative overflow-hidden">
+          {/* Background decorations */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-5">
+            <Anchor className="absolute top-20 right-20 w-32 h-32 text-cyan-600" />
+            <Compass className="absolute bottom-20 left-20 w-24 h-24 text-blue-600" />
+          </div>
+
+          <Card className={`w-full max-w-md border-2 ${
+            isPerfectScore 
+              ? 'border-amber-300 bg-gradient-to-br from-amber-50 to-yellow-50' 
+              : 'border-cyan-200 bg-white'
+          }`}>
             <CardHeader>
-              <CardTitle>Quiz Complete!</CardTitle>
+              <CardTitle className="flex items-center gap-2 justify-center text-2xl">
+                {isPerfectScore ? (
+                  <>
+                    <Sparkles className="w-6 h-6 text-amber-500" />
+                    Island Conquered!
+                    <Sparkles className="w-6 h-6 text-amber-500" />
+                  </>
+                ) : (
+                  <>
+                    <Flag className="w-6 h-6 text-cyan-600" />
+                    Challenge Complete
+                  </>
+                )}
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold mb-4">
-                Your Score: {score}/{questions.length}
-              </p>
+            <CardContent className="text-center">
+              <div className="mb-6">
+                <p className="text-3xl font-bold mb-2 bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
+                  {score}/{questions.length}
+                </p>
+                <p className="text-sm text-gray-600">
+                  {isPerfectScore 
+                    ? '⚓ Perfect! You claimed this island!' 
+                    : '🗺️ You need a perfect score to conquer the island'}
+                </p>
+              </div>
+              
               <div className="flex flex-col gap-3">
                 <Link href="/roadmap" className="w-full">
-                  <Button variant="outline" className="w-full">
-                    Back to Study
+                  <Button variant="outline" className="w-full border-cyan-300 hover:bg-cyan-50">
+                    <Map className="w-4 h-4 mr-2" />
+                    Return to Expeditions
                   </Button>
                 </Link>
-                <Button onClick={restartQuiz} className="w-full">
-                  Take Quiz Again
+                <Button 
+                  onClick={restartQuiz} 
+                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700"
+                >
+                  <Compass className="w-4 h-4 mr-2" />
+                  Retry Challenge
                 </Button>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Unlock Modal */}
-        <Dialog open={showUnlockModal} onOpenChange={setShowUnlockModal}>
-          <DialogContent className="sm:max-w-md animate-bounce-in border-2 border-yellow-400 bg-gradient-to-br from-yellow-50 to-orange-50">
+        {/* Unlock Modal - Island Conquered! */}
+        <Dialog open={showUnlockModal} onOpenChange={setShowUnlockModal} modal>
+          <DialogContent className="sm:max-w-md border-4 border-amber-400 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 overflow-hidden">
             <DialogHeader>
               <div className="flex flex-col items-center gap-4">
                 <div className="relative">
-                  <Trophy className="w-16 h-16 text-yellow-500 animate-pulse-glow" />
-                  <div className="absolute inset-0 animate-particle-burst">
-                    {/* Particle elements */}
-                    {[...Array(6)].map((_, i) => (
-                      <div
-                        key={i}
-                        className="absolute w-2 h-2 bg-yellow-400 rounded-full animate-particle"
-                        style={{
-                          top: '50%',
-                          left: '50%',
-                          animationDelay: `${i * 0.2}s`,
-                          transformOrigin: `${50 + 40 * Math.cos((i * 60) * Math.PI / 180)}% ${50 + 40 * Math.sin((i * 60) * Math.PI / 180)}%`
-                        }}
-                      />
-                    ))}
+                  <div className="w-24 h-24 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center animate-bounce shadow-xl">
+                    <Flag className="w-12 h-12 text-white" />
                   </div>
+                  <Sparkles className="w-8 h-8 text-amber-500 absolute -top-2 -right-2 animate-pulse" />
                 </div>
-                <DialogTitle className="text-2xl font-bold text-center">
-                  🎉 Node Unlocked!
+                <DialogTitle className="text-3xl font-bold text-center bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+                  🏝️ Island Conquered!
                 </DialogTitle>
-                <p className="text-lg text-center text-gray-700">
-                  {completionData?.item_title || 'New topic'}
+                <p className="text-xl font-semibold text-center text-gray-800">
+                  {completionData?.item_title || 'New Territory'}
+                </p>
+                <p className="text-sm text-gray-600 text-center">
+                  ⚓ You&apos;ve claimed this knowledge island. New territories await!
                 </p>
               </div>
             </DialogHeader>
-            <div className="flex flex-col gap-3 mt-6">
+            <div className="flex flex-col gap-3 mt-6 relative z-10">
               <Button
                 onClick={() => {
                   setShowUnlockModal(false);
                   router.push('/roadmap');
                 }}
-                className="w-full"
+                className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 shadow-lg"
               >
-                Back to Roadmap
+                <Map className="w-4 h-4 mr-2" />
+                Back to Expeditions
               </Button>
               <Button
                 variant="outline"
@@ -247,9 +282,10 @@ export default function QuizPage() {
                   setShowUnlockModal(false);
                   router.push(`/knowledge-graph?highlight=title_${id}`);
                 }}
-                className="w-full"
+                className="w-full border-2 border-cyan-300 hover:bg-cyan-50"
               >
-                View in Knowledge Graph
+                <Compass className="w-4 h-4 mr-2" />
+                View on Knowledge Map
               </Button>
             </div>
           </DialogContent>
@@ -260,15 +296,21 @@ export default function QuizPage() {
 
   if (questions.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md border-2 border-cyan-200">
           <CardHeader>
-            <CardTitle>No Questions Available</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Flag className="w-5 h-5 text-cyan-600" />
+              No Challenges Available
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="mb-4">This quiz doesn&apos;t have questions yet.</p>
+            <p className="mb-4 text-gray-700">This island doesn&apos;t have challenges yet.</p>
             <Link href="/roadmap">
-              <Button>Back to Study</Button>
+              <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700">
+                <Map className="w-4 h-4 mr-2" />
+                Return to Expeditions
+              </Button>
             </Link>
           </CardContent>
         </Card>
@@ -277,15 +319,29 @@ export default function QuizPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-      <Card className="w-full max-w-2xl">
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold text-gray-800">
-            Quiz | Question {currentQuestion + 1} of {questions.length}
+    <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-indigo-100 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-5">
+        <Compass className="absolute top-10 left-10 w-32 h-32 text-cyan-600 animate-pulse" />
+        <Flag className="absolute top-20 right-20 w-24 h-24 text-blue-600" />
+        <Anchor className="absolute bottom-10 right-10 w-28 h-28 text-indigo-600" />
+      </div>
+
+      {/* Quiz Card */}
+      <Card className="w-full max-w-2xl border-2 border-cyan-200 bg-white/90 backdrop-blur-sm shadow-2xl relative z-10">
+        <CardHeader className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-t-lg">
+          <CardTitle className="flex items-center justify-between text-xl">
+            <span className="flex items-center gap-2">
+              <Flag className="w-5 h-5" />
+              Island Challenge
+            </span>
+            <span className="text-sm font-normal">
+              Question {currentQuestion + 1} of {questions.length}
+            </span>
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="text-gray-600 mb-6 text-lg">
+        <CardContent className="p-6">
+          <p className="text-gray-800 mb-6 text-lg font-medium">
             {questions[currentQuestion].question}
           </p>
 
@@ -294,15 +350,16 @@ export default function QuizPage() {
               <button
                 key={index}
                 onClick={() => selectedAnswer === null && handleAnswerSelect(index)}
-                className={`w-full p-4 text-left border rounded-lg transition-all duration-300 ${getButtonClass(index)}`}
+                disabled={selectedAnswer !== null}
+                className={`w-full p-4 text-left border rounded-xl transition-all duration-300 ${getButtonClass(index)}`}
               >
                 <div className="flex items-center justify-between">
-                  <span>{option}</span>
+                  <span className="font-medium">{option}</span>
                   {selectedAnswer !== null && index === questions[currentQuestion].correct && (
-                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    <CheckCircle className="w-6 h-6 text-green-600" />
                   )}
                   {selectedAnswer === index && index !== questions[currentQuestion].correct && (
-                    <XCircle className="w-5 h-5 text-red-500" />
+                    <XCircle className="w-6 h-6 text-red-600" />
                   )}
                 </div>
               </button>
@@ -311,10 +368,25 @@ export default function QuizPage() {
         </CardContent>
       </Card>
 
-      <div className="mt-6 min-h-12 flex justify-center">
+      {/* Navigation Button */}
+      <div className="mt-6 min-h-12 flex justify-center relative z-10">
         {selectedAnswer !== null && (
-          <Button onClick={handleNextQuestion}>
-            {currentQuestion < questions.length - 1 ? "Next Question" : "Finish Quiz"}
+          <Button 
+            onClick={handleNextQuestion}
+            size="lg"
+            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 shadow-lg px-8"
+          >
+            {currentQuestion < questions.length - 1 ? (
+              <>
+                Next Question
+                <Compass className="w-4 h-4 ml-2" />
+              </>
+            ) : (
+              <>
+                <Flag className="w-4 h-4 mr-2" />
+                Finish Challenge
+              </>
+            )}
           </Button>
         )}
       </div>

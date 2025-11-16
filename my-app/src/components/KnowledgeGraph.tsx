@@ -143,27 +143,6 @@ const KnowledgeGraph = ({ graphData, unlockedIds, highlightNodeId, onHighlightDi
 
   return (
     <div>
-      {/* Legend */}
-      <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-        <h3 className="text-sm font-semibold text-gray-800 mb-2">Graph Legend</h3>
-        <div className="flex flex-wrap gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-blue-500 border-2 border-white rounded-full"></div>
-            <span>Large circles = Topics</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
-            <span>Small circles = Titles</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500">(Colors distinguish different roadmaps)</span>
-          </div>
-        </div>
-        <div className="mt-2 text-xs text-gray-600">
-          <strong>Edge types:</strong> contains (topic→title), prerequisite (required before), complementary (builds on), conceptual (similar concepts), transfer (cross-domain)
-        </div>
-      </div>
-
       {/* Graph */}
       <div className="border border-gray-200 rounded-lg overflow-hidden">
         <ForceGraph2D

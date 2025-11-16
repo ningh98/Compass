@@ -36,7 +36,6 @@ client = genai.Client(api_key=GEMINI_API_KEY)
 
 @router.post("/generate", response_model=schema.RoadmapResponse)
 async def generate_roadmap(request: schema.RoadmapCreate, db_conn: Session = Depends(db.get_db)):
-    print(f"GEMINI_API_KEY loaded: {GEMINI_API_KEY[:-10]}...")  # Debug
     
     prompt = f"""
     Generate a personalized learning roadmap for someone who wants to learn: {request.topic}
@@ -170,13 +169,18 @@ async def delete_roadmap(roadmap_id: int, db_conn: Session = Depends(db.get_db))
             models.RoadmapItem.roadmap_id == roadmap_id
         ).all()
         
-        # Get roadmap item IDs to delete associated quiz questions
+        # Get roadmap item IDs to delete associated quiz questions and progress
         item_ids = [item.id for item in roadmap_items]
         
         # Delete quiz questions associated with these items
         if item_ids:
             db_conn.query(models.QuizQuestion).filter(
                 models.QuizQuestion.roadmap_item_id.in_(item_ids)
+            ).delete(synchronize_session=False)
+            
+            # Delete quiz progress for these items
+            db_conn.query(models.QuizProgress).filter(
+                models.QuizProgress.roadmap_item_id.in_(item_ids)
             ).delete(synchronize_session=False)
         
         # Delete roadmap items
