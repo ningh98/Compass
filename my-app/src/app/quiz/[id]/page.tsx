@@ -1,11 +1,14 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { CheckCircle, XCircle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Trophy } from "lucide-react";
 
 import { type Question } from "@/lib/data";
 
@@ -14,8 +17,16 @@ interface QuizData {
   questions: Question[];
 }
 
+interface CompletionData {
+  success: boolean;
+  is_new_unlock: boolean;
+  roadmap_item_id: number;
+  item_title?: string;
+}
+
 export default function QuizPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params.id as string;
 
   const [quizData, setQuizData] = useState<QuizData | null>(null);
@@ -25,6 +36,8 @@ export default function QuizPage() {
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [score, setScore] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
+  const [completionData, setCompletionData] = useState<CompletionData | null>(null);
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
 
   useEffect(() => {
     fetch(`http://localhost:8000/api/quiz/${id}`)
@@ -49,7 +62,7 @@ export default function QuizPage() {
     if (isComplete && quizData) {
       const questions = quizData?.questions || [];
       const isPerfectScore = score === questions.length;
-      
+
       if (isPerfectScore) {
         // Save completion to backend
         fetch('http://localhost:8000/api/progress/complete', {
@@ -65,6 +78,31 @@ export default function QuizPage() {
           .then(res => res.json())
           .then(data => {
             console.log('Progress saved:', data);
+            setCompletionData(data);
+
+            if (data.is_new_unlock) {
+              // Store new unlock in localStorage for session highlights
+              const existingNewUnlocks = JSON.parse(localStorage.getItem('new_unlocks') || '[]');
+              if (!existingNewUnlocks.includes(`title_${parseInt(id)}`)) {
+                existingNewUnlocks.push(`title_${parseInt(id)}`);
+                localStorage.setItem('new_unlocks', JSON.stringify(existingNewUnlocks));
+              }
+
+              // Fetch item title for modal
+              fetch('http://localhost:8000/api/roadmaps/')
+                .then(res => res.json())
+                .then((roadmaps: any[]) => {
+                  const item = roadmaps.flatMap((r: any) => r.items).find((item: any) => item.id === parseInt(id));
+                  if (item) {
+                    setCompletionData(prev => ({ ...prev!, item_title: item.title }));
+                  }
+                  setShowUnlockModal(true);
+                })
+                .catch(err => {
+                  console.error('Error fetching item title:', err);
+                  setShowUnlockModal(true); // Show anyway without title
+                });
+            }
           })
           .catch(err => {
             console.error('Error saving progress:', err);
@@ -136,29 +174,87 @@ export default function QuizPage() {
   };
 
   if (isComplete) {
+    // Show unlock modal if new unlock
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Quiz Complete!</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold mb-4">
-              Your Score: {score}/{questions.length}
-            </p>
-            <div className="flex flex-col gap-3">
-              <Link href="/roadmap" className="w-full">
-                <Button variant="outline" className="w-full">
-                  Back to Study
+      <>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Quiz Complete!</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold mb-4">
+                Your Score: {score}/{questions.length}
+              </p>
+              <div className="flex flex-col gap-3">
+                <Link href="/roadmap" className="w-full">
+                  <Button variant="outline" className="w-full">
+                    Back to Study
+                  </Button>
+                </Link>
+                <Button onClick={restartQuiz} className="w-full">
+                  Take Quiz Again
                 </Button>
-              </Link>
-              <Button onClick={restartQuiz} className="w-full">
-                Take Quiz Again
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Unlock Modal */}
+        <Dialog open={showUnlockModal} onOpenChange={setShowUnlockModal}>
+          <DialogContent className="sm:max-w-md animate-bounce-in border-2 border-yellow-400 bg-gradient-to-br from-yellow-50 to-orange-50">
+            <DialogHeader>
+              <div className="flex flex-col items-center gap-4">
+                <div className="relative">
+                  <Trophy className="w-16 h-16 text-yellow-500 animate-pulse-glow" />
+                  <div className="absolute inset-0 animate-particle-burst">
+                    {/* Particle elements */}
+                    {[...Array(6)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="absolute w-2 h-2 bg-yellow-400 rounded-full animate-particle"
+                        style={{
+                          top: '50%',
+                          left: '50%',
+                          animationDelay: `${i * 0.2}s`,
+                          transformOrigin: `${50 + 40 * Math.cos((i * 60) * Math.PI / 180)}% ${50 + 40 * Math.sin((i * 60) * Math.PI / 180)}%`
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <DialogTitle className="text-2xl font-bold text-center">
+                  🎉 Node Unlocked!
+                </DialogTitle>
+                <p className="text-lg text-center text-gray-700">
+                  {completionData?.item_title || 'New topic'}
+                </p>
+              </div>
+            </DialogHeader>
+            <div className="flex flex-col gap-3 mt-6">
+              <Button
+                onClick={() => {
+                  setShowUnlockModal(false);
+                  router.push('/roadmap');
+                }}
+                className="w-full"
+              >
+                Back to Roadmap
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowUnlockModal(false);
+                  router.push(`/knowledge-graph?highlight=title_${id}`);
+                }}
+                className="w-full"
+              >
+                View in Knowledge Graph
               </Button>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </DialogContent>
+        </Dialog>
+      </>
     );
   }
 

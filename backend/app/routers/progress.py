@@ -60,7 +60,9 @@ async def complete_quiz(
         models.QuizProgress.user_id == request.user_id,
         models.QuizProgress.roadmap_item_id == request.roadmap_item_id
     ).first()
-    
+
+    is_new_unlock = existing is None
+
     if existing:
         # Update existing record
         existing.score = request.score
@@ -76,13 +78,14 @@ async def complete_quiz(
             completed_at=datetime.utcnow()
         )
         db_conn.add(progress)
-    
+
     db_conn.commit()
-    
+
     return {
         "success": True,
         "message": "Quiz completed successfully!",
-        "roadmap_item_id": request.roadmap_item_id
+        "roadmap_item_id": request.roadmap_item_id,
+        "is_new_unlock": is_new_unlock
     }
 
 @router.get("/unlocked", response_model=UnlockedIdsResponse)

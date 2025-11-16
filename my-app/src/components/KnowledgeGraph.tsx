@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 import ForceGraph2D from 'react-force-graph-2d';
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useMemo } from 'react';
 
 interface Node {
   id: string;
@@ -26,11 +26,21 @@ interface GraphData {
 interface KnowledgeGraphProps {
   graphData: GraphData | null;
   unlockedIds: Set<number>;
+  highlightNodeId?: string | null;
+  onHighlightDismiss?: () => void;
 }
 
-const KnowledgeGraph = ({ graphData, unlockedIds }: KnowledgeGraphProps) => {
+const KnowledgeGraph = ({ graphData, unlockedIds, highlightNodeId, onHighlightDismiss }: KnowledgeGraphProps) => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fgRef = useRef<any>(null);
+
+  // Manage highlighted nodes locally using useMemo to prevent unnecessary re-renders
+  const localHighlightIds = useMemo(() => {
+    if (highlightNodeId === 'new') {
+      return JSON.parse(localStorage.getItem('new_unlocks') || '[]');
+    }
+    return [];
+  }, [highlightNodeId]);
 
   // Colors for different groups (roadmaps)
   const groupColors = [
@@ -100,15 +110,19 @@ const KnowledgeGraph = ({ graphData, unlockedIds }: KnowledgeGraphProps) => {
 
   // Transform data for react-force-graph-2d with fog of war
   const transformedData = {
-    nodes: graphData.nodes.map(node => ({
-      id: node.id,
-      label: node.label,
-      type: node.type,
-      group: node.group || 0,
-      roadmap_id: node.roadmap_id,
-      unlocked: isNodeUnlocked(node),
-      topicComplete: node.type === 'topic' ? isTopicComplete(node.id) : false
-    })),
+    nodes: graphData.nodes.map(node => {
+      const isHighlighted = localHighlightIds.includes(node.id);
+      return {
+        id: node.id,
+        label: node.label,
+        type: node.type,
+        group: node.group || 0,
+        roadmap_id: node.roadmap_id,
+        unlocked: isNodeUnlocked(node),
+        topicComplete: node.type === 'topic' ? isTopicComplete(node.id) : false,
+        isHighlighted
+      };
+    }),
     links: graphData.edges
       .filter(edge => {
         // Filter out links where either endpoint is locked
@@ -182,12 +196,13 @@ const KnowledgeGraph = ({ graphData, unlockedIds }: KnowledgeGraphProps) => {
           nodeVal={(node: any) => node.type === 'topic' ? 8 : 4} // Size based on type
           nodeLabel={(node: any) => {
             const type = node.type === 'topic' ? 'TOPIC' : 'TITLE';
-            const status = node.type === 'topic' 
+            const status = node.type === 'topic'
               ? (node.topicComplete ? ' ✓ (Complete)' : ' (In Progress)')
               : (node.unlocked ? ' ✓' : ' 🔒 (Locked)');
-            
+            const newBadge = node.isHighlighted ? ' ✨ NEW!' : '';
+
             return `<div style="background: rgba(255,255,255,0.9); padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
-              <strong style="color: #333;">${node.label}${status}</strong><br/>
+              <strong style="color: #333;">${node.label}${newBadge}${status}</strong><br/>
               <small style="color: #666;">${type}</small>
             </div>`;
           }}
@@ -196,6 +211,24 @@ const KnowledgeGraph = ({ graphData, unlockedIds }: KnowledgeGraphProps) => {
             const label = node.label;
             const fontSize = 12/globalScale;
             ctx.font = `${fontSize}px Sans-Serif`;
+            
+            // Determine node color based on type and status
+            let nodeColor = '#cccccc';
+            if (node.type === 'title' && !node.unlocked) {
+              nodeColor = '#9CA3AF'; // Gray for locked
+            } else if (node.type === 'topic') {
+              if (node.topicComplete) {
+                nodeColor = '#10B981'; // Green for completed topics
+              } else {
+                // Use group color for incomplete topics
+                const group = node.group || 0;
+                nodeColor = groupColors[group % groupColors.length];
+              }
+            } else {
+              // Unlocked title nodes use normal group color
+              const group = node.group || 0;
+              nodeColor = groupColors[group % groupColors.length];
+            }
             
             // Draw node circle
             const radius = node.type === 'topic' ? 8 : 4;
@@ -209,7 +242,7 @@ const KnowledgeGraph = ({ graphData, unlockedIds }: KnowledgeGraphProps) => {
               ctx.globalAlpha = 1.0;
             }
             
-            ctx.fillStyle = node.color || '#cccccc';
+            ctx.fillStyle = nodeColor;
             ctx.fill();
             
             // Draw border for completed topics
@@ -218,7 +251,19 @@ const KnowledgeGraph = ({ graphData, unlockedIds }: KnowledgeGraphProps) => {
               ctx.lineWidth = 2;
               ctx.stroke();
             }
-            
+
+            // Draw highlight ring for unlocked nodes
+            if (node.isHighlighted && node.unlocked) {
+              const ringRadius = radius + 6;
+              ctx.beginPath();
+              ctx.arc(node.x, node.y, ringRadius, 0, 2 * Math.PI, false);
+              ctx.strokeStyle = '#F59E0B'; // Orange-yellow
+              ctx.lineWidth = 3;
+              ctx.globalAlpha = 0.4;
+              ctx.stroke();
+              ctx.globalAlpha = 1.0;
+            }
+
             ctx.globalAlpha = 1.0; // Reset opacity
           }}
 
@@ -249,6 +294,18 @@ const KnowledgeGraph = ({ graphData, unlockedIds }: KnowledgeGraphProps) => {
 
           // Interactions
           onNodeClick={(node: any) => {
+            // Dismiss highlight if clicked
+            if (node.isHighlighted) {
+              const currentNewUnlocks = JSON.parse(localStorage.getItem('new_unlocks') || '[]');
+              const updatedNewUnlocks = currentNewUnlocks.filter((id: string) => id !== node.id);
+              localStorage.setItem('new_unlocks', JSON.stringify(updatedNewUnlocks));
+
+              // Force re-render if no more highlights
+              if (updatedNewUnlocks.length === 0 && onHighlightDismiss) {
+                onHighlightDismiss();
+              }
+            }
+
             // Center on clicked node
             fgRef.current.centerAt(node.x, node.y, 1000);
             fgRef.current.zoom(2, 2000);

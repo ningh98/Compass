@@ -46,7 +46,9 @@ const RoadmapPage = () => {
     fetch('http://localhost:8000/api/roadmaps/')
       .then(res => res.json())
       .then(data => {
-        setRoadmaps(data);
+        // Sort roadmaps by ID in descending order (newest first)
+        const sortedData = data.sort((a: Roadmap, b: Roadmap) => b.id - a.id);
+        setRoadmaps(sortedData);
         setLoading(false);
       });
 
@@ -69,6 +71,11 @@ const RoadmapPage = () => {
     
     // Check if all items from previous level are complete
     const prevLevelItems = roadmap.items.filter(item => item.level === level - 1);
+    
+    // FIX: If there are no items in the previous level, the level should NOT be unlocked
+    // This prevents Array.every() from returning true for empty arrays
+    if (prevLevelItems.length === 0) return false;
+    
     return prevLevelItems.every(item => completedIds.has(item.id));
   };
 

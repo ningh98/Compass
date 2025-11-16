@@ -29,12 +29,24 @@ const KnowledgeGraphPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [unlockedIds, setUnlockedIds] = useState<Set<number>>(new Set());
+  const [highlightNodeId, setHighlightNodeId] = useState<string | null>(null);
+  const [highlightedNodeIds, setHighlightedNodeIds] = useState<string[]>([]);
 
   useEffect(() => {
+    // Load new unlocks from localStorage
+    const newUnlocks = JSON.parse(localStorage.getItem('new_unlocks') || '[]');
+    setHighlightNodeId(newUnlocks.length > 0 ? 'new' : null);
+
+    // Clear query params if present
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('highlight')) {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+
     const fetchGraphData = async () => {
       try {
         setLoading(true);
-        
+
         // Fetch graph data
         const graphResponse = await fetch('http://localhost:8000/api/knowledge-graph/');
         if (!graphResponse.ok) {
@@ -101,7 +113,12 @@ const KnowledgeGraphPage = () => {
         </div>
 
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <KnowledgeGraph graphData={graphData} unlockedIds={unlockedIds} />
+          <KnowledgeGraph
+            graphData={graphData}
+            unlockedIds={unlockedIds}
+            highlightNodeId={highlightNodeId}
+            onHighlightDismiss={() => setHighlightedNodeIds([])}
+          />
         </div>
       </div>
     </div>
