@@ -32,6 +32,12 @@ Learning new topics is overwhelming. Generic roadmaps don't fit individual needs
 - **Future: Social Learning** – Connect with others on similar learning journeys
 ---
 
+## 📸 Demo
+
+https://youtu.be/X_cRXqphYWQ
+
+---
+
 ## 📦 Features
 
 ### 🗺️ AI-Powered Roadmap Generation
@@ -160,16 +166,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## 📸 Screenshots
-
-*Coming soon – Screenshots and demo will be added here*
-
----
 
 **Happy Learning!** 🎓✨
 
 ---
-
-## 💭 About the Name
-
-**Note:** This repository is currently named "Study" but the application is branded as **Compass**. You may want to rename the repository to better reflect the product name.
